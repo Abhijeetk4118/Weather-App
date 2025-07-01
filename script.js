@@ -8,6 +8,8 @@ const weather = document.getElementById('weatherMain');
 const temp = document.querySelector('.temp');
 const dates = document.querySelector('.todayDates');
 const times = document.getElementById('todayTime');
+const loadingSpinner = document.getElementById('loadingSpinner');
+const errorMsg = document.getElementById('errorMsg');
 let date = new Date();
 
 
@@ -18,8 +20,25 @@ form.addEventListener('submit', function (e) {
     e.preventDefault();
 
     // Updating the city name
-    const city = cityName.value;
+    const city = cityName.value.trim();
     const myWeatherContainer = document.querySelector('.weatherContainer')
+
+    // Reset UI
+    errorMsg.style.display = 'none';
+    loadingSpinner.style.display = 'block';
+    myCity.innerHTML = '';
+    temp.innerHTML = '';
+    weather.innerHTML = '';
+    image.src = '';
+    dates.innerHTML = '';
+    times.innerHTML = '';
+
+    if (!city) {
+        loadingSpinner.style.display = 'none';
+        errorMsg.innerText = 'Please enter a city name!';
+        errorMsg.style.display = 'block';
+        return;
+    }
 
     // API URL
     let url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=931f131dde3f4ae2fcbc3289fc646471`
@@ -28,6 +47,12 @@ form.addEventListener('submit', function (e) {
     fetch(url).then((response) => {
         return response.json();
     }).then((data) => {
+        loadingSpinner.style.display = 'none';
+        if (data.cod !== 200) {
+            errorMsg.innerText = data.message ? data.message : 'City not found!';
+            errorMsg.style.display = 'block';
+            return;
+        }
 
         const tempValue = Math.round(data['main']['temp']);
         const weatherMain = data['weather'][0]['main'];
@@ -35,9 +60,18 @@ form.addEventListener('submit', function (e) {
 
         // Updating the DOM
         myCity.innerHTML = city;
-        temp.innerHTML = `${tempValue}`
-        weather.innerHTML = `${weatherMain}`
-        temp.innerHTML = `${tempValue}<span><sup>o</sup>C</span.`;
+        temp.innerHTML = `${tempValue}<span><sup>o</sup>C</span>`;
+        weather.innerHTML = `${weatherMain}`;
+
+        // Animate weather info
+        temp.style.opacity = 0;
+        temp.style.transform = 'translateY(30px)';
+        weather.style.opacity = 0;
+        weather.style.transform = 'translateY(30px)';
+        setTimeout(() => {
+            temp.style.animation = 'fadeInUp 0.8s 0.2s forwards';
+            weather.style.animation = 'fadeInUp 0.8s 0.4s forwards';
+        }, 100);
 
         // Updating the Images according to the weather
         if (weatherMain == 'Clear') {
@@ -63,45 +97,8 @@ form.addEventListener('submit', function (e) {
 
         // Updating dates
         const currentMonth = date.getMonth();
-        switch(currentMonth){
-            case 0:
-            dates.innerHTML = `${date.getDate()}, Jan`
-            break;
-            case 1:
-            dates.innerHTML = `${date.getDate()}, Feb`
-            break;
-            case 2:
-            dates.innerHTML = `${date.getDate()}, Mar`
-            break;
-            case 3:
-            dates.innerHTML = `${date.getDate()}, Apr`
-            break;
-            case 4:
-            dates.innerHTML = `${date.getDate()}, May`
-            break;
-            case 5:
-            dates.innerHTML = `${date.getDate()}, Jun`
-            break;
-            case 6:
-            dates.innerHTML = `${date.getDate()}, Jul`
-            break;
-            case 7:
-            dates.innerHTML = `${date.getDate()}, Aug`
-            break;
-            case 8:
-            dates.innerHTML = `${date.getDate()}, Sept.`
-            break;
-            case 9:
-            dates.innerHTML = `${date.getDate()}, Oct.`
-            break;
-            case 10:
-            dates.innerHTML = `${date.getDate()}, Nov`
-            break;
-            case 11:
-            dates.innerHTML = `${date.getDate()}, Dec`
-            break;
-
-        }
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept.', 'Oct.', 'Nov', 'Dec'];
+        dates.innerHTML = `${date.getDate()}, ${months[currentMonth]}`;
 
         // Updating times       
         function leftInterval() {
@@ -121,5 +118,9 @@ form.addEventListener('submit', function (e) {
             left.innerHTML = `${hours}h: ${minutes}m: ${seconds}s`
         }
         setInterval(leftInterval, 1000);
-    })
+    }).catch(() => {
+        loadingSpinner.style.display = 'none';
+        errorMsg.innerText = 'Network error. Please try again!';
+        errorMsg.style.display = 'block';
+    });
 })
